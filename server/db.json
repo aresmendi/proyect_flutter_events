@@ -6,16 +6,23 @@
       "image": "https://picsum.photos/200/300",
       "date": "2025-02-10",
       "description": "Descripción del primer evento",
-      "price": 20.0
+      "price": 20
     },
-
     {
       "id": "2",
       "title": "Evento 2",
       "image": "https://picsum.photos/200/300",
       "date": "2025-05-20",
       "description": "Descripción del segundo evento",
-      "price": 40.0
+      "price": 40
+    },
+    {
+      "title": "Repeta",
+      "description": "",
+      "date": "2026-02-06T15:19:21.435501",
+      "price": 12,
+      "image": "",
+      "id": "l1x-5i3"
     }
   ]
 }

@@ -2,43 +2,51 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import '../models/event.dart';
 
-class ImageLoader extends StatelessWidget{
-  const ImageLoader({super.key,
-    required this.event,
-    required this.size});
-    
-    final Event event;
-    final double size;
-  
-   @override
+class ImageLoader extends StatelessWidget {
+  const ImageLoader({super.key, required this.event, required this.size});
+
+  final Event event;
+  final double? size;
+
+  @override
   Widget build(BuildContext context) {
     if (event.image.isEmpty) {
       return Icon(Icons.image_outlined, size: size);
     }
 
-    if (Uri.parse(event.image).isAbsolute) {
+    if (_isNetworkImage(event.image)) {
       // Si la imagen es una URL, se carga desde la red
-      return Image.network(event.image,
-          loadingBuilder: buildLoader,
-          frameBuilder: buildImage,
-          errorBuilder: buildError,
-          fit: BoxFit.cover,
-          width: size,
-          height: size);
+      return Image.network(
+        event.image,
+        loadingBuilder: buildLoader,
+        frameBuilder: buildImage,
+        errorBuilder: buildError,
+        fit: BoxFit.cover,
+        width: size,
+        height: size,
+      );
     } else {
       // Si la imagen es una ruta local, se carga desde el dispositivo
-      return Image.file(File(event.image),
-          frameBuilder: buildImage,
-          errorBuilder: buildError,
-          fit: BoxFit.cover,
-          width: size,
-          height: size);
+      return Image.file(
+        File(event.image),
+        frameBuilder: buildImage,
+        errorBuilder: buildError,
+        fit: BoxFit.cover,
+        width: size,
+        height: size,
+      );
     }
+  }
+   bool _isNetworkImage(String path) {
+    return path.startsWith('http://') || path.startsWith('https://');
   }
 
   /// Muestra un indicador de progreso
   Widget buildLoader(
-      BuildContext context, Widget child, ImageChunkEvent? loadingProgress) {
+    BuildContext context,
+    Widget child,
+    ImageChunkEvent? loadingProgress,
+  ) {
     final totalBytes = loadingProgress?.expectedTotalBytes;
     final bytesLoaded = loadingProgress?.cumulativeBytesLoaded;
     if (totalBytes != null && bytesLoaded != null) {
@@ -55,7 +63,10 @@ class ImageLoader extends StatelessWidget{
 
   /// Muestra un icono de error
   Widget buildError(
-      BuildContext context, Object exception, StackTrace? stackTrace) {
+    BuildContext context,
+    Object exception,
+    StackTrace? stackTrace,
+  ) {
     return Icon(
       Icons.image_not_supported_outlined,
       semanticLabel: 'Error al cargar la imagen',
@@ -65,8 +76,12 @@ class ImageLoader extends StatelessWidget{
   }
 
   /// Muestra la imagen con una animación de entrada
-  Widget buildImage(BuildContext context, Widget child, int? frame,
-      bool wasSynchronouslyLoaded) {
+  Widget buildImage(
+    BuildContext context,
+    Widget child,
+    int? frame,
+    bool wasSynchronouslyLoaded,
+  ) {
     if (wasSynchronouslyLoaded) {
       return child;
     }

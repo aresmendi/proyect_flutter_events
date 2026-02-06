@@ -19,10 +19,10 @@ class EventsService extends ChangeNotifier {
   bool _loading = false;
 
   String searchFilter = '';
-  bool? sortDateEvents;
-  bool? sortPriceEvents;
-  bool? showLastEvents;
-  bool? showFavoritesEvents;
+  bool sortDateEvents = false;
+  bool sortPriceEvents = false;
+  bool showLastEvents = true;
+  bool showFavoritesEvents = false;
 
   bool get loading => _loading;
 
@@ -30,24 +30,24 @@ class EventsService extends ChangeNotifier {
     updateEvents();
   }
 
-  updateEvents() {
-    getEvents().then((value) {
-      events = value;
-      filteredEvents = value;
-      applyFilters();
-    });
+  updateEvents() async {
+    await getEvents();
+    applyFilters();
   }
 
   Future<void> toggleFavorite(Event event) async {
-    event.isFavorite = !event.isFavorite;
-    
-    if (event.isFavorite) {
-      await FavoritesService.addFavorite(event.id!);
-    } else {
-      await FavoritesService.removeFavorite(event.id!);
+    final i = events.indexWhere((e) => e.id == event.id);
+
+    if (i != -1) {
+      events[i].isFavorite = !events[i].isFavorite;
+
+      if (events[i].isFavorite) {
+        await FavoritesService.addFavorite(event.id!);
+      } else {
+        await FavoritesService.removeFavorite(event.id!);
+      }
+      applyFilters();
     }
-    
-    notifyListeners();
   }
 
   ///GET ALL
@@ -63,31 +63,32 @@ class EventsService extends ChangeNotifier {
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
         List jsonList = jsonDecode(response.body);
-        List<Event> events = [];
+        List<Event> eventsTemporal = [];
 
         final favoriteIds = await FavoritesService.getFavorites();
 
         for (var item in jsonList) {
           Event event = Event.fromJson(item);
           event.isFavorite = favoriteIds.contains(event.id);
-          events.add(event);
+          eventsTemporal.add(event);
         }
-        this.events = events;
+        events = eventsTemporal;
         _loading = false;
         notifyListeners();
-        return events;
+        return eventsTemporal;
       } else {
         setError('Error al obtener listado de eventos. ${response.statusCode}');
         _loading = false;
+        notifyListeners();
         return [];
       }
     } catch (e) {
       setError('Error al obtener listado de eventos. $e');
       _loading = false;
+      notifyListeners();
       return events;
     }
   }
-
 
   //POST
   Future<Event?> addEvent(Event event) async {
@@ -212,56 +213,63 @@ class EventsService extends ChangeNotifier {
   }
 
   showLast() {
-    showLastEvents = showLastEvents == null ? true : !showLastEvents!;
+    showLastEvents = !showLastEvents;
     applyFilters();
   }
 
-  showFavorites() {
-    showFavoritesEvents = showFavoritesEvents == null
-        ? true
-        : !showFavoritesEvents!;
-    applyFilters();
-  }
+  void showFavorites() {
+  showFavoritesEvents = !showFavoritesEvents;
+  applyFilters();
+}
+
 
   sortDate() {
-    sortDateEvents = sortDateEvents == null ? true : !sortDateEvents!;
+    sortDateEvents = !sortDateEvents;
     resetSortPrice();
     applyFilters();
   }
 
   sortPrice() {
-    sortPriceEvents = sortPriceEvents == null ? true : !sortPriceEvents!;
+    sortPriceEvents = !sortPriceEvents;
     resetSortDate();
     applyFilters();
   }
 
-  resetSortDate() => sortDateEvents = null;
-  resetSortPrice() => sortPriceEvents = null;
+  resetSortDate() => sortDateEvents = false;
+  resetSortPrice() => sortPriceEvents = false;
 
   applyFilters() {
-    filteredEvents = events
-        .where(
-          (element) => element.description.toLowerCase().contains(
-            searchFilter.toLowerCase(),
-          ),
-        )
-        .toList();
-    if (sortDateEvents != null) {
-      filteredEvents.sort((a, b) => a.date.compareTo(b.date));
+    List<Event> temp = List.from(events);
+
+    // favoritos
+    if (showFavoritesEvents == true) {
+      temp = temp.where((e) => e.isFavorite).toList();
     }
-    if (sortPriceEvents != null) {
-      filteredEvents.sort((a, b) => a.price.compareTo(b.price));
+
+    // próximos
+    if (showLastEvents == true) {
+      temp = temp.where((e) => e.date.isAfter(DateTime.now())).toList();
     }
-    if (showFavoritesEvents != null) {
-      filteredEvents = filteredEvents
-          .where((event) => event.isFavorite)
-          .toList();
+
+    // orden fecha
+    if (sortDateEvents) {
+      temp.sort(
+        (a, b) => sortDateEvents
+            ? a.date.compareTo(b.date)
+            : b.date.compareTo(a.date),
+      );
     }
-    if (showLastEvents != null) {
-      filteredEvents = filteredEvents
-          .where((event) => event.date.isAfter(DateTime.now()))
-          .toList();
+
+    // orden precio
+    if (sortPriceEvents) {
+      temp.sort(
+        (a, b) => sortPriceEvents
+            ? a.price.compareTo(b.price)
+            : b.price.compareTo(a.price),
+      );
     }
+
+    filteredEvents = temp;
     notifyListeners();
   }
 }

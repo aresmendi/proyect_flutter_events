@@ -26,9 +26,7 @@ class HomeScreen extends StatelessWidget {
               builder: (context) => EventDetailScreen(event: event),
             ),
           ).then((_) {
-            // Limpia la selección al volver
             context.read<SelectedEventNotifier>().clear();
-            // Actualiza la lista
             context.read<EventsService>().updateEvents();
           });
         },

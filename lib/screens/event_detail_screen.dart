@@ -31,6 +31,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     setState(() {
       isFavorite = widget.event.isFavorite;
     });
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
@@ -56,13 +57,13 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
           ),
           TextButton(
             onPressed: () async {
-              Navigator.pop(context); // Cierra el diálogo
+              Navigator.pop(context);
 
               final service = context.read<EventsService>();
               final result = await service.removeEvent(widget.event.id!);
 
               if (result != null && mounted) {
-                Navigator.pop(context); // Vuelve al listado
+                Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text('Evento eliminado correctamente'),
@@ -89,7 +90,6 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
         builder: (context) => EventEditScreen(event: widget.event),
       ),
     ).then((_) {
-      // Actualiza la pantalla al volver
       setState(() {});
     });
   }
@@ -121,82 +121,117 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Imagen del evento
-            if (widget.event.image.isNotEmpty)
-              ImageLoader(event: widget.event, size: 300)
-            else
-              Container(
-                height: 300,
-                color: Colors.grey[300],
-                child: const Icon(Icons.image_outlined, size: 100),
-              ),
 
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Título
-                  Text(
-                    widget.event.title,
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+      // 👇 AQUÍ está la magia
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final bool isWide = constraints.maxWidth > 800;
+
+          return SingleChildScrollView(
+            child: isWide
+                ? Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Imagen (desktop)
+                      Expanded(
+                        flex: 4,
+                        child: _buildImage(),
+                      ),
+                      // Info
+                      Expanded(
+                        flex: 6,
+                        child: _buildInfo(context),
+                      ),
+                    ],
+                  )
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Imagen (móvil)
+                      _buildImage(),
+                      _buildInfo(context),
+                    ],
+                  ),
+          );
+        },
+      ),
+    );
+  }
+
+  /// Imagen del evento (usa ImageLoader)
+  Widget _buildImage() {
+    if (widget.event.image.isEmpty) {
+      return Container(
+        height: 300,
+        color: Colors.grey[300],
+        child: const Icon(Icons.image_outlined, size: 100),
+      );
+    }
+
+    return SizedBox(
+      height: 300,
+      child: ImageLoader(
+        event: widget.event,
+        size: double.infinity,
+      ),
+    );
+  }
+
+  /// Información del evento
+  Widget _buildInfo(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            widget.event.title,
+            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+          ),
+          const SizedBox(height: 16),
+
+          Row(
+            children: [
+              const Icon(Icons.calendar_today, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                DateFormat('dd/MM/yyyy').format(widget.event.date),
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          Row(
+            children: [
+              const Icon(Icons.euro, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                NumberFormat.currency(
+                  locale: 'es',
+                  symbol: '€',
+                ).format(widget.event.price),
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: Colors.green[700],
                       fontWeight: FontWeight.bold,
                     ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Fecha
-                  Row(
-                    children: [
-                      const Icon(Icons.calendar_today, size: 20),
-                      const SizedBox(width: 8),
-                      Text(
-                        DateFormat('dd/MM/yyyy').format(widget.event.date),
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Precio
-                  Row(
-                    children: [
-                      const Icon(Icons.euro, size: 20),
-                      const SizedBox(width: 8),
-                      Text(
-                        NumberFormat.currency(
-                          locale: 'es',
-                          symbol: '€',
-                        ).format(widget.event.price),
-                        style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(
-                              color: Colors.green[700],
-                              fontWeight: FontWeight.bold,
-                            ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Descripción
-                  const Text(
-                    'Descripción',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    widget.event.description,
-                    style: Theme.of(context).textTheme.bodyLarge,
-                  ),
-                ],
               ),
-            ),
-          ],
-        ),
+            ],
+          ),
+          const SizedBox(height: 24),
+
+          const Text(
+            'Descripción',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            widget.event.description,
+            style: Theme.of(context).textTheme.bodyLarge,
+          ),
+        ],
       ),
     );
   }

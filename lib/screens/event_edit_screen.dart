@@ -9,7 +9,7 @@ import '../provider/events_service.dart';
 
 class EventEditScreen extends StatefulWidget {
   const EventEditScreen({super.key, required this.event});
-  
+
   final Event event;
 
   @override
@@ -21,7 +21,7 @@ class _EventEditScreenState extends State<EventEditScreen> {
   late TextEditingController _titleController;
   late TextEditingController _descriptionController;
   late TextEditingController _priceController;
-  
+
   late DateTime _selectedDate;
   late String _imagePath;
   bool _hasChanges = false;
@@ -30,8 +30,12 @@ class _EventEditScreenState extends State<EventEditScreen> {
   void initState() {
     super.initState();
     _titleController = TextEditingController(text: widget.event.title);
-    _descriptionController = TextEditingController(text: widget.event.description);
-    _priceController = TextEditingController(text: widget.event.price.toString());
+    _descriptionController = TextEditingController(
+      text: widget.event.description,
+    );
+    _priceController = TextEditingController(
+      text: widget.event.price.toString(),
+    );
     _selectedDate = widget.event.date;
     _imagePath = widget.event.image;
 
@@ -106,21 +110,21 @@ class _EventEditScreenState extends State<EventEditScreen> {
       final result = await service.modifyEvent(updatedEvent);
 
       if (result != null && mounted) {
-        Navigator.pop(context);
+        Navigator.popUntil(context, (route) => route.isFirst);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Evento actualizado correctamente')),
         );
       } else if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: ${service.lastError}')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: ${service.lastError}')));
       }
     }
   }
 
   void _showExitDialog() {
     if (!_hasChanges) {
-      Navigator.pop(context);
+      Navigator.popUntil(context, (route) => route.isFirst);
       return;
     }
 
@@ -137,7 +141,7 @@ class _EventEditScreenState extends State<EventEditScreen> {
           TextButton(
             onPressed: () {
               Navigator.pop(context); // Cierra el diálogo
-              Navigator.pop(context); // Vuelve atrás sin guardar
+              Navigator.popUntil(context, (route) => route.isFirst);
             },
             child: const Text('Descartar'),
           ),
@@ -174,149 +178,154 @@ class _EventEditScreenState extends State<EventEditScreen> {
         ),
         body: SingleChildScrollView(
           padding: const EdgeInsets.all(16.0),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Campo Título
-                TextFormField(
-                  controller: _titleController,
-                  decoration: const InputDecoration(
-                    labelText: 'Título *',
-                    border: OutlineInputBorder(),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'El título es obligatorio';
-                    }
-                    if (value.length < 5 || value.length > 50) {
-                      return 'El título debe tener entre 5 y 50 caracteres';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-
-                // Campo Descripción
-                TextFormField(
-                  controller: _descriptionController,
-                  decoration: const InputDecoration(
-                    labelText: 'Descripción',
-                    border: OutlineInputBorder(),
-                  ),
-                  maxLines: 3,
-                  validator: (value) {
-                    if (value != null && value.isNotEmpty) {
-                      if (value.length < 5 || value.length > 255) {
-                        return 'La descripción debe tener entre 5 y 255 caracteres';
-                      }
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-
-                // Selector de Fecha
-                ListTile(
-                  title: const Text('Fecha *'),
-                  subtitle: Text(
-                    DateFormat('dd/MM/yyyy').format(_selectedDate),
-                  ),
-                  trailing: const Icon(Icons.calendar_today),
-                  onTap: () => _selectDate(context),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(4),
-                    side: BorderSide(color: Colors.grey.shade400),
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // Campo Precio
-                TextFormField(
-                  controller: _priceController,
-                  decoration: const InputDecoration(
-                    labelText: 'Precio *',
-                    border: OutlineInputBorder(),
-                    suffixText: '€',
-                  ),
-                  keyboardType: TextInputType.number,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'El precio es obligatorio';
-                    }
-                    final price = double.tryParse(value);
-                    if (price == null || price < 0) {
-                      return 'El precio debe ser un número positivo';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-
-                // Selector de Imagen
-                ElevatedButton.icon(
-                  onPressed: _pickImage,
-                  icon: const Icon(Icons.image),
-                  label: const Text('Seleccionar imagen'),
-                ),
-                const SizedBox(height: 16),
-
-                // Vista previa de la imagen
-                if (_imagePath.isNotEmpty)
-                  Column(
-                    children: [
-                      Image.network(
-                        _imagePath,
-                        height: 200,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            height: 200,
-                            color: Colors.grey[300],
-                            child: const Icon(Icons.image, size: 50),
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 8),
-                      OutlinedButton.icon(
-                        onPressed: _removeImage,
-                        icon: const Icon(Icons.delete),
-                        label: const Text('Eliminar imagen'),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.red,
-                        ),
-                      ),
-                    ],
-                  ),
-
-                const SizedBox(height: 24),
-
-                // Botones
-                Row(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 600),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: _hasChanges ? _saveEvent : null,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                        ),
-                        child: const Text('Guardar'),
+                    // Campo Título
+                    TextFormField(
+                      controller: _titleController,
+                      decoration: const InputDecoration(
+                        labelText: 'Título *',
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'El título es obligatorio';
+                        }
+                        if (value.length < 5 || value.length > 50) {
+                          return 'El título debe tener entre 5 y 50 caracteres';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+              
+                    // Campo Descripción
+                    TextFormField(
+                      controller: _descriptionController,
+                      decoration: const InputDecoration(
+                        labelText: 'Descripción',
+                        border: OutlineInputBorder(),
+                      ),
+                      maxLines: 3,
+                      validator: (value) {
+                        if (value != null && value.isNotEmpty) {
+                          if (value.length < 5 || value.length > 255) {
+                            return 'La descripción debe tener entre 5 y 255 caracteres';
+                          }
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+              
+                    // Selector de Fecha
+                    ListTile(
+                      title: const Text('Fecha *'),
+                      subtitle: Text(
+                        DateFormat('dd/MM/yyyy').format(_selectedDate),
+                      ),
+                      trailing: const Icon(Icons.calendar_today),
+                      onTap: () => _selectDate(context),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(4),
+                        side: BorderSide(color: Colors.grey.shade400),
                       ),
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: _showExitDialog,
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                        ),
-                        child: const Text('Volver'),
+                    const SizedBox(height: 16),
+              
+                    // Campo Precio
+                    TextFormField(
+                      controller: _priceController,
+                      decoration: const InputDecoration(
+                        labelText: 'Precio *',
+                        border: OutlineInputBorder(),
+                        suffixText: '€',
                       ),
+                      keyboardType: TextInputType.number,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'El precio es obligatorio';
+                        }
+                        final price = double.tryParse(value);
+                        if (price == null || price < 0) {
+                          return 'El precio debe ser un número positivo';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+              
+                    // Selector de Imagen
+                    ElevatedButton.icon(
+                      onPressed: _pickImage,
+                      icon: const Icon(Icons.image),
+                      label: const Text('Seleccionar imagen'),
+                    ),
+                    const SizedBox(height: 16),
+              
+                    // Vista previa de la imagen
+                    if (_imagePath.isNotEmpty)
+                      Column(
+                        children: [
+                          Image.network(
+                            _imagePath,
+                            height: 200,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                height: 200,
+                                color: Colors.grey[300],
+                                child: const Icon(Icons.image, size: 50),
+                              );
+                            },
+                          ),
+                          const SizedBox(height: 8),
+                          OutlinedButton.icon(
+                            onPressed: _removeImage,
+                            icon: const Icon(Icons.delete),
+                            label: const Text('Eliminar imagen'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.red,
+                            ),
+                          ),
+                        ],
+                      ),
+              
+                    const SizedBox(height: 24),
+              
+                    // Botones
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: _hasChanges ? _saveEvent : null,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.green,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                            ),
+                            child: const Text('Guardar'),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: _showExitDialog,
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                            ),
+                            child: const Text('Volver'),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ],
+              ),
             ),
           ),
         ),

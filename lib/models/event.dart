@@ -46,7 +46,6 @@ class Event {
         dateKey: date.toIso8601String(),
         priceKey: price,
         imageKey: image,
-        isFavoriteKey: isFavorite,
       };
     } else {
       return {
@@ -56,7 +55,6 @@ class Event {
         dateKey: date.toIso8601String(),
         priceKey: price,
         imageKey: image,
-        isFavoriteKey: isFavorite,
       };
     }
   }
